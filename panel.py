@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QToolButton, QVBoxLayout, QHBoxLayout
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 
 class PanelSelector(QWidget):
@@ -15,6 +16,9 @@ class PanelSelector(QWidget):
         layout.addWidget(self.right_button)
         self.setLayout(layout)
         self.parent=parent 
+        if self.parent.num_panels < 1:
+            self.right_button.setEnabled(False)
+            self.left_button.setDisabled(True)
 
     def move_left(self):
         self.parent.move_left()
@@ -67,17 +71,28 @@ class HayDispenserPanel(QWidget):
             self.sender().setStyleSheet(self.off_color)
         print("Checked?", checked)
 
-class MainWindow(QMainWindow):
+class TextDisplay(QWidget):
     def __init__(self):
         super().__init__()
-        self.num_panels=3
+        layout = QVBoxLayout()
+        self.output_box = QtWidgets.QTextBrowser()
+        self.output_box.append('HorseFeeder 3000\nDebug log goes here')
+        layout.addWidget(self.output_box)
+        self.setLayout(layout)
+
+class MainWindow(QMainWindow):
+    def __init__(self,num_panels=1,num_locks=8):
+        super().__init__()
+        self.num_panels=num_panels
+        self.num_locks = num_locks
         self.panel_idx=0
         selector = PanelSelector(self)
+        master_layout = QHBoxLayout()
         layout = QVBoxLayout()
         layout.addWidget(selector)
         self.disp_panels = [HayDispenserPanel() for i in range(self.num_panels)]
         for i,panel in enumerate(self.disp_panels):
-            panel.num_locks=6
+            panel.num_locks=self.num_locks
             panel.panel_idx=i
             panel.init_panel()
             layout.addWidget(panel)
@@ -85,8 +100,15 @@ class MainWindow(QMainWindow):
                 panel.show()
             else:
                 panel.hide()
+        layout_td = QVBoxLayout()
+        layout_td.addWidget(TextDisplay())
+        
+        master_layout.addLayout(layout_td)
+        master_layout.addLayout(layout)
+
+
         self.container=QWidget()
-        self.container.setLayout(layout)
+        self.container.setLayout(master_layout)
         self.setCentralWidget(self.container)
 
     def move_left(self):
